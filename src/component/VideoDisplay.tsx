@@ -1,11 +1,13 @@
 interface VideoDisplayProps {
-  videoSrc: string;
+  videoSources: string[];
+  poster?: string;
   onTimeUpdate: (event: React.SyntheticEvent<HTMLVideoElement>) => void;
-  videoRef: React.RefObject<HTMLVideoElement>; // Accept videoRef as a prop
+  videoRef: React.RefObject<HTMLVideoElement>;
 }
 
 const VideoDisplay: React.FC<VideoDisplayProps> = ({
-  videoSrc,
+  videoSources,
+  poster,
   onTimeUpdate,
   videoRef,
 }) => {
@@ -13,11 +15,14 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
     <div className="w-full md:w-1/2 mx-auto">
       <video
         controls
+        poster={poster}
         ref={videoRef}
         onTimeUpdate={onTimeUpdate}
         className="w-full h-full object-cover"
       >
-        <source src={videoSrc} type="video/webm" />
+        {videoSources.map((src, index) => (
+          <source key={index} src={src} />
+        ))}
       </video>
     </div>
   );

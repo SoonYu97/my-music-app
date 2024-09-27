@@ -3,7 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 
 interface MediaFile {
   title: string;
-  hasLrc: boolean;
+  video_sources: string[];
+  audio_sources: string[];
+  image_poster: string | null;
+  has_lrc: boolean;
   artist?: string;
   album?: string;
 }
@@ -20,6 +23,7 @@ const MediaList: React.FC<MediaListProps> = ({ onMediaSelect }) => {
     const fetchMediaFiles = async () => {
       try {
         const files: MediaFile[] = await invoke("list_media_files");
+        console.log(files);
         setMediaFiles(files);
       } catch (err) {
         console.log(err);
@@ -41,15 +45,22 @@ const MediaList: React.FC<MediaListProps> = ({ onMediaSelect }) => {
       </h2>
       {error && <p className="text-red-500">{error}</p>}
       <ul className="list-disc pl-5">
-        {mediaFiles.map(({ title, artist, album }, index) => (
-          <li
-            key={index}
-            className="cursor-pointer hover:text-blue-500"
-            onClick={() => handleClick({ title, hasLrc: true })} // Assuming hasLrc is true for all for now
-          >
-            {title} - {`${artist}${album && ` (${album})`}`}
-          </li>
-        ))}
+        {mediaFiles.map(
+          (
+            mediaFile,
+            index
+          ) => (
+            <li
+              key={index}
+              className="cursor-pointer hover:text-blue-500"
+              onClick={() =>
+                handleClick(mediaFile)
+              }
+            >
+              {mediaFile.title} - {`${mediaFile.artist}${mediaFile.album && ` (${mediaFile.album})`}`}
+            </li>
+          )
+        )}
       </ul>
     </div>
   );

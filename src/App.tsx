@@ -3,14 +3,21 @@ import "./App.css";
 import MediaList from "./component/MediaList";
 import VideoLyrics from "./component/VideoLyrics";
 
-function App() {
-  const [selectedMedia, setSelectedMedia] = useState<{
-    title: string;
-    hasLrc: boolean;
-  } | null>(null);
+interface MediaFile {
+  title: string;
+  video_sources: string[];
+  audio_sources: string[];
+  image_poster: string | null;
+  has_lrc: boolean;
+}
 
-  const handleMediaSelect = (media: { title: string; hasLrc: boolean }) => {
+function App() {
+  const [selectedMedia, setSelectedMedia] = useState<MediaFile | null>(null);
+
+  const handleMediaSelect = (media: MediaFile) => {
     setSelectedMedia(media);
+    
+    console.log(media.image_poster)
   };
 
   return (
@@ -18,13 +25,12 @@ function App() {
       <MediaList onMediaSelect={handleMediaSelect} />
       {selectedMedia && (
         <VideoLyrics
-          videoSrc={`../public/media/${selectedMedia?.title}`}
+          videoSources={selectedMedia.video_sources}
+          audioSources={selectedMedia.audio_sources}
+          poster={selectedMedia.image_poster}
           lyricsSrc={
-            selectedMedia?.hasLrc
-              ? `../public/media/${selectedMedia?.title.replace(
-                  /\.[^/.]+$/,
-                  ".lrc"
-                )}`
+            selectedMedia.has_lrc
+              ? `../public/media/${selectedMedia?.title}/${selectedMedia?.title}.lrc`
               : ""
           }
         />

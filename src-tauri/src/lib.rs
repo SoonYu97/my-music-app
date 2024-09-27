@@ -12,11 +12,14 @@ pub struct MusicVideo {
     has_lrc: bool,
     artist: Option<String>,
     album: Option<String>,
+    video_sources: Vec<String>,
+    audio_sources: Vec<String>,
+    image_poster: Option<String>,
 }
 
 #[tauri::command]
 fn list_media_files() -> Result<Vec<MusicVideo>, String> {
-    let media_dir = PathBuf::from("../public/media");
+    let media_dir = PathBuf::from("..\\public\\media");
     let mut media_files = Vec::new();
 
     if !media_dir.exists() {
@@ -32,39 +35,62 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
 
-        if let Some(extension) = path.extension() {
-            if extension == "mp3" || extension == "mp4" || extension == "webm" {
-                if let Some(file_stem) = path.file_stem() {
-                    if let Some(file_name) = path.file_name() {
-                        let lrc_path =
-                            media_dir.join(format!("{}.lrc", file_stem.to_string_lossy()));
-                        let has_lrc = lrc_path.exists();
+        if path.is_dir() {
+            let folder_name = path.file_name().unwrap().to_string_lossy().to_string();
+            let mut has_lrc = false;
+            let mut video_sources: Vec<String> = Vec::new();
+            let mut audio_sources: Vec<String> = Vec::new();
+            let mut image_poster: Option<String> = None;
 
-                        let mut artist: Option<String> = None;
-                        let mut album: Option<String> = None;
+            for file in fs::read_dir(&path).map_err(|e| e.to_string())? {
+                let file = file.map_err(|e| e.to_string())?;
+                let file_path = file.path();
+                let extension = file_path.extension().and_then(|ext| ext.to_str());
 
-                        if has_lrc {
-                            if let Some(metadata) = extract_lyrics_metadata(&lrc_path) {
-                                artist = Some(metadata.artist);
-                                album = Some(metadata.album);
-                            }
-                        }
-
-                        let music_video = MusicVideo {
-                            title: file_name.to_string_lossy().to_string(),
-                            has_lrc,
-                            artist,
-                            album,
-                        };
-                        media_files.push(music_video);
+                match extension {
+                    Some("lrc") => {
+                        has_lrc = true;
                     }
+                    Some("webm") | Some("mp4") => {
+                        video_sources.push(file_path.to_string_lossy().to_string());
+                    }
+                    Some("mp3") => {
+                        audio_sources.push(file_path.to_string_lossy().to_string());
+                    }
+                    Some("jpg") | Some("png") => {
+                        image_poster = Some(file_path.to_string_lossy().to_string());
+                    }
+                    _ => {}
                 }
             }
+
+            let mut artist: Option<String> = None;
+            let mut album: Option<String> = None;
+
+            if has_lrc {
+                let lrc_path = path.join(format!("{}.lrc", folder_name));
+                if let Some(metadata) = extract_lyrics_metadata(&lrc_path) {
+                    artist = Some(metadata.artist);
+                    album = Some(metadata.album);
+                }
+            }
+
+            let music_video = MusicVideo {
+                title: folder_name,
+                has_lrc,
+                artist,
+                album,
+                video_sources,
+                audio_sources,
+                image_poster,
+            };
+            media_files.push(music_video);
         }
     }
 
     Ok(media_files)
 }
+
 
 #[derive(Serialize)]
 pub struct Lyric {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import VideoDisplay from "./VideoDisplay";
+import AudioDisplay from "./AudioDisplay";
 import LyricDisplay from "./LyricDisplay";
 
 interface Lyric {
@@ -15,14 +16,24 @@ interface LyricsMetadata {
   lyrics: Lyric[];
 }
 
-const VideoLyrics: React.FC<{ videoSrc: string; lyricsSrc: string }> = ({
-  videoSrc,
+interface VideoLyricsProps {
+  videoSources: string[];
+  audioSources: string[];
+  poster: string | null;
+  lyricsSrc: string;
+}
+
+const VideoLyrics: React.FC<VideoLyricsProps> = ({
+  videoSources,
+  audioSources,
+  poster,
   lyricsSrc,
 }) => {
   const [metadata, setMetadata] = useState<LyricsMetadata | null>(null);
   const [currentLyricIndex, setCurrentLyricIndex] = useState<number>(-1);
   const [isScrollPaused, setIsScrollPaused] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const scrollPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -44,9 +55,15 @@ const VideoLyrics: React.FC<{ videoSrc: string; lyricsSrc: string }> = ({
 
   useEffect(() => {
     videoRef.current?.load();
-  }, [videoSrc, videoRef]);
+  }, [videoSources]);
 
-  const handleTimeUpdate = (event: React.SyntheticEvent<HTMLVideoElement>) => {
+  useEffect(() => {
+    videoRef.current?.load();
+  }, [audioSources]);
+
+  const handleTimeUpdate = (
+    event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>
+  ) => {
     const currentTime = event.currentTarget.currentTime;
     if (metadata?.lyrics) {
       const index =
@@ -79,11 +96,36 @@ const VideoLyrics: React.FC<{ videoSrc: string; lyricsSrc: string }> = ({
         </div>
       )}
 
-      <VideoDisplay
-        videoSrc={videoSrc}
-        onTimeUpdate={handleTimeUpdate}
-        videoRef={videoRef}
-      />
+      {/* {poster && (
+        <div className="p-4 text-center">
+          <img src={poster} alt="Media Poster" className="mx-auto" />
+        </div>
+      )} */}
+
+      {videoSources?.length > 0 ? (
+        poster ? (
+          <VideoDisplay
+            videoSources={videoSources}
+            onTimeUpdate={handleTimeUpdate}
+            videoRef={videoRef}
+            poster={poster}
+          />
+        ) : (
+          <VideoDisplay
+            videoSources={videoSources}
+            onTimeUpdate={handleTimeUpdate}
+            videoRef={videoRef}
+          />
+        )
+      ) : (
+        audioSources?.length > 0 && (
+          <AudioDisplay
+            audioSources={audioSources}
+            onTimeUpdate={handleTimeUpdate}
+            audioRef={audioRef}
+          />
+        )
+      )}
 
       {metadata?.lyrics && (
         <LyricDisplay
