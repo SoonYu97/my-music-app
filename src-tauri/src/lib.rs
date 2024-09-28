@@ -21,11 +21,11 @@ pub struct MusicVideo {
 
 #[tauri::command]
 fn list_media_files() -> Result<Vec<MusicVideo>, String> {
-    let media_dir = PathBuf::from("..\\public\\media");
+    let media_dir = PathBuf::from("media");
     let mut media_files = Vec::new();
 
     if !media_dir.exists() {
-        return Err("Media directory not found.".into());
+        return Err(format!("Media directory {:?} not found.", media_dir));
     }
     if !media_dir.is_dir() {
         return Err("Media is not a directory.".into());

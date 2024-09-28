@@ -150,7 +150,7 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
           <button
             onClick={toggleAutoScroll}
             className={`mt-2 px-4 py-2 ${
-              autoScroll ? "bg-gray-500 text-white" : "bg-green-500 text-white"
+              autoScroll ? "bg-green-500 text-white" : "bg-gray-500 text-white"
             } rounded`}
           >
             {autoScroll ? "Disable" : "Enable"}

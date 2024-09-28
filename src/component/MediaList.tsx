@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import MediaCard from "./MediaCard";
 
 export interface MediaFile {
@@ -22,11 +22,28 @@ const MediaList: React.FC<MediaListProps> = ({ onMediaSelect }) => {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // function convertFileSrc(src: string): string {
+  //   return convertFileSrc(src);
+  // }
+
   useEffect(() => {
     const fetchMediaFiles = async () => {
       try {
         const files: MediaFile[] = await invoke("list_media_files");
-        setMediaFiles(files);
+        const updatedFiles = files.map((file) => ({
+          ...file,
+          video_sources: file.video_sources.map((source) =>
+            convertFileSrc(source)
+          ),
+          audio_sources: file.audio_sources.map((source) =>
+            convertFileSrc(source)
+          ),
+          image_poster: file.image_poster
+            ? convertFileSrc(file.image_poster)
+            : undefined,
+        }));
+        setMediaFiles(updatedFiles);
+        console.log(updatedFiles)
       } catch (err) {
         console.log(err);
         setError("Failed to load media files.");
