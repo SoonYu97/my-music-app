@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
-interface MediaFile {
+export interface MediaFile {
   title: string;
   video_sources: string[];
   audio_sources: string[];
-  image_poster: string | null;
+  image_poster?: string;
+  original_lyrics?: string;
+  translations: string[];
   has_lrc: boolean;
   artist?: string;
   album?: string;
@@ -23,7 +25,6 @@ const MediaList: React.FC<MediaListProps> = ({ onMediaSelect }) => {
     const fetchMediaFiles = async () => {
       try {
         const files: MediaFile[] = await invoke("list_media_files");
-        console.log(files);
         setMediaFiles(files);
       } catch (err) {
         console.log(err);

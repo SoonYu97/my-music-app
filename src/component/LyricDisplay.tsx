@@ -1,56 +1,84 @@
-import { useEffect, useRef } from "react";
-
-interface Lyric {
-  time: number;
-  text: string;
-}
+import { useEffect, useRef, useState } from "react";
 
 interface LyricDisplayProps {
-  lyrics: Lyric[];
-  currentLyricIndex: number;
-  isScrollPaused: boolean;
-  onLyricClick: (time: number) => void;
-  onScrollPause: () => void;
+  lyrics: string[];
+  translation?: string[][];
+  timeStamps: number[];
+  currentTime: number;
+  onLineClick: (time: number) => void;
+  autoScroll: boolean;
 }
 
 const LyricDisplay: React.FC<LyricDisplayProps> = ({
   lyrics,
-  currentLyricIndex,
-  isScrollPaused,
-  onLyricClick,
-  onScrollPause,
+  translation = [],
+  timeStamps,
+  currentTime,
+  onLineClick,
+  autoScroll,
 }) => {
-  const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const currentLyricElement = document.getElementById(
-      `lyric-${currentLyricIndex}`
+  const [isScrolling, setIsScrolling] = useState(false);
+  const lyricsRef = useRef<HTMLDivElement>(null);
+
+  const currentLyricIndex = timeStamps.findIndex((time, index) => {
+    return (
+      currentTime >= time &&
+      (index === timeStamps.length - 1 || currentTime < timeStamps[index + 1])
     );
-    if (!isScrollPaused && currentLyricElement && lyricsContainerRef.current) {
-      currentLyricElement.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+  });
+
+  useEffect(() => {
+    if (autoScroll && !isScrolling && lyricsRef.current) {
+      const currentLyricElement = lyricsRef.current.children[currentLyricIndex];
+      if (currentLyricElement) {
+        currentLyricElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+      // const activeIndex = timeStamps.findIndex((stamp) => currentTime < stamp);
+      // if (activeIndex !== -1 && lyricsRef.current) {
+      //   const activeElement = lyricsRef.current.children[activeIndex];
+      //   activeElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // }
     }
-  }, [currentLyricIndex]);
+  }, [currentTime, autoScroll, isScrolling, timeStamps]);
+
+  const handleScroll = () => {
+    setIsScrolling(true);
+    setTimeout(() => setIsScrolling(false), 2000);
+  };
+
   return (
     <div
-      ref={lyricsContainerRef}
-      onScroll={onScrollPause}
-      className="w-full mx-auto md:w-1/2 overflow-y-scroll p-4 bg-gray-100 h-128"
+      ref={lyricsRef}
+      onScroll={handleScroll}
+      className="overflow-y-auto max-h-96 w-full bg-gray-800 text-white p-4 rounded"
     >
-      {lyrics.map((lyric, index) => (
-        <p
+      {lyrics.map((line, index) => (
+        <div
           key={index}
-          id={`lyric-${index}`}
-          className={`py-2 cursor-pointer ${
+          onClick={() => onLineClick(timeStamps[index])}
+          className={`lyric-line py-2 ${
             currentLyricIndex === index
-              ? "text-red-500 font-bold"
-              : "text-black"
-          }`}
-          onClick={() => onLyricClick(lyric.time)} // Trigger click handler
+              ? "text-blue-500 font-bold"
+              : "text-gray-300"
+          } cursor-pointer`}
         >
-          <span dangerouslySetInnerHTML={{ __html: lyric.text }} />
-        </p>
+          <span dangerouslySetInnerHTML={{ __html: line }} />
+          {translation.map((trans, transIndex) => (
+            <div
+              key={transIndex}
+              className={`text-sm ${
+                currentLyricIndex === index
+                  ? "text-blue-500 font-bold"
+                  : "text-gray-300"
+              }`}
+            >
+              {trans[index]}
+            </div>
+          ))}
+        </div>
       ))}
     </div>
   );

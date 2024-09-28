@@ -15,6 +15,8 @@ pub struct MusicVideo {
     video_sources: Vec<String>,
     audio_sources: Vec<String>,
     image_poster: Option<String>,
+    original_lyrics: Option<String>, // Original .lrc file
+    translations: Vec<String>,       // List of translation files (e.g., .zh.lrc, .en.lrc)
 }
 
 #[tauri::command]
@@ -41,6 +43,8 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
             let mut video_sources: Vec<String> = Vec::new();
             let mut audio_sources: Vec<String> = Vec::new();
             let mut image_poster: Option<String> = None;
+            let mut original_lyrics: Option<String> = None;
+            let mut translations: Vec<String> = Vec::new();
 
             for file in fs::read_dir(&path).map_err(|e| e.to_string())? {
                 let file = file.map_err(|e| e.to_string())?;
@@ -49,7 +53,13 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
 
                 match extension {
                     Some("lrc") => {
-                        has_lrc = true;
+                        let file_stem = file_path.file_stem().unwrap().to_string_lossy();
+                        if file_stem == folder_name {
+                            original_lyrics = Some(file_path.to_string_lossy().to_string());
+                            has_lrc = true;
+                        } else if file_stem.starts_with(&folder_name) {
+                            translations.push(file_path.to_string_lossy().to_string());
+                        }
                     }
                     Some("webm") | Some("mp4") => {
                         video_sources.push(file_path.to_string_lossy().to_string());
@@ -69,10 +79,11 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
 
             if has_lrc {
                 let lrc_path = path.join(format!("{}.lrc", folder_name));
-                if let Some(metadata) = extract_lyrics_metadata(&lrc_path) {
+                if let Ok(content) = fs::read_to_string(lrc_path) {
+                    let metadata = extract_metadata(&content);
                     artist = Some(metadata.artist);
                     album = Some(metadata.album);
-                }
+                };
             }
 
             let music_video = MusicVideo {
@@ -83,6 +94,8 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
                 video_sources,
                 audio_sources,
                 image_poster,
+                original_lyrics,
+                translations,
             };
             media_files.push(music_video);
         }
@@ -91,7 +104,6 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
     Ok(media_files)
 }
 
-
 #[derive(Serialize)]
 pub struct Lyric {
     pub time: f64,
@@ -99,67 +111,89 @@ pub struct Lyric {
 }
 
 #[derive(Serialize)]
-pub struct LyricsMetadata {
+pub struct SongMetadata {
+    pub artist: String,
+    pub album: String,
+    pub title: String,
+}
+
+#[derive(Serialize)]
+pub struct LyricMetadata {
     pub artist: String,
     pub album: String,
     pub title: String,
     pub lyrics: Vec<Lyric>,
 }
 
-// Extracts metadata from the .lrc file
-fn extract_lyrics_metadata(file_path: &PathBuf) -> Option<LyricsMetadata> {
-    if let Ok(content) = fs::read_to_string(file_path) {
-        let mut artist = String::new();
-        let mut album = String::new();
-        let mut title = String::new();
-        let mut lyrics: Vec<Lyric> = Vec::new();
+// Function to extract metadata (artist, album, title)
+fn extract_metadata(content: &str) -> SongMetadata {
+    let mut artist = String::new();
+    let mut album = String::new();
+    let mut title = String::new();
 
-        let time_regex = Regex::new(r"\[(\d+):(\d+)\.(\d+)\]").unwrap();
-        let furigana_regex = Regex::new(r"(\p{Script=Han}+)\((.*?)\)").unwrap();
-
-        for line in content.lines() {
-            if line.starts_with("[ar:") {
-                artist = line.replace("[ar:", "").replace("]", "").trim().to_string();
-            } else if line.starts_with("[al:") {
-                album = line.replace("[al:", "").replace("]", "").trim().to_string();
-            } else if line.starts_with("[ti:") {
-                title = line.replace("[ti:", "").replace("]", "").trim().to_string();
-            } else if let Some(captures) = time_regex.captures(line) {
-                // Parse time
-                let minutes: f64 = captures[1].parse().unwrap();
-                let seconds: f64 = captures[2].parse().unwrap();
-                let milliseconds: f64 = captures[3].parse().unwrap();
-                let time = minutes * 60.0 + seconds + milliseconds / 1000.0;
-
-                // Extract the text and replace furigana with <ruby><rt>
-                let mut text = time_regex.replace(line, "").to_string();
-                text = furigana_regex
-                    .replace_all(&text, r"<ruby>$1<rt>$2</rt></ruby>")
-                    .to_string();
-
-                lyrics.push(Lyric { time, text });
-            }
+    for line in content.lines() {
+        if line.starts_with("[ar:") {
+            artist = line.replace("[ar:", "").replace("]", "").trim().to_string();
+        } else if line.starts_with("[al:") {
+            album = line.replace("[al:", "").replace("]", "").trim().to_string();
+        } else if line.starts_with("[ti:") {
+            title = line.replace("[ti:", "").replace("]", "").trim().to_string();
         }
-
-        return Some(LyricsMetadata {
-            artist,
-            album,
-            title,
-            lyrics,
-        });
     }
 
-    None
+    SongMetadata {
+        artist,
+        album,
+        title,
+    }
+}
+
+// Function to extract the lyrics and timestamps
+fn extract_lyrics(content: &str) -> Vec<Lyric> {
+    let mut lyrics: Vec<Lyric> = Vec::new();
+    let time_regex = Regex::new(r"\[(\d+):(\d+)\.(\d+)\]").unwrap();
+    let furigana_regex = Regex::new(r"(\p{Script=Han}+)\((.*?)\)").unwrap();
+
+    for line in content.lines() {
+        if let Some(captures) = time_regex.captures(line) {
+            // Parse time
+            let minutes: f64 = captures[1].parse().unwrap();
+            let seconds: f64 = captures[2].parse().unwrap();
+            let milliseconds: f64 = captures[3].parse().unwrap();
+            let time = minutes * 60.0 + seconds + milliseconds / 1000.0;
+
+            // Extract the text and replace furigana with <ruby><rt>
+            let mut text = time_regex.replace(line, "").to_string();
+            text = furigana_regex
+                .replace_all(&text, r"<ruby>$1<rt>$2</rt></ruby>")
+                .to_string();
+
+            lyrics.push(Lyric { time, text });
+        }
+    }
+
+    lyrics
 }
 
 #[tauri::command]
-fn parse_lyrics_file(file_path: String) -> Result<LyricsMetadata, String> {
+fn parse_lyrics_file(file_path: String) -> Result<LyricMetadata, String> {
     let media_dir = PathBuf::from(file_path.clone());
     if !media_dir.exists() {
         return Err(format!("File not found: {:?}", media_dir));
     }
-    // Read and parse lyrics metadata
-    extract_lyrics_metadata(&media_dir).ok_or_else(|| "Failed to parse lyrics".to_string())
+
+    if let Ok(content) = fs::read_to_string(media_dir) {
+        let metadata = extract_metadata(&content);
+        let lyrics = extract_lyrics(&content);
+        Ok(LyricMetadata {
+            lyrics,
+            artist: metadata.artist,
+            album: metadata.album,
+            title: metadata.title,
+        })
+    } else {
+        Err("Failed to read file".to_string())
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

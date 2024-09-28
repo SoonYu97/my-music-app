@@ -1,122 +1,139 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import LyricDisplay from "./LyricDisplay";
 import VideoDisplay from "./VideoDisplay";
 import AudioDisplay from "./AudioDisplay";
-import LyricDisplay from "./LyricDisplay";
+
+interface VideoLyricsProps {
+  title: string;
+  videoSources: string[];
+  audioSources: string[];
+  poster?: string;
+  original_lyrics?: string;
+  translations?: string[];
+  artist?: string;
+  album?: string;
+}
 
 interface Lyric {
   time: number;
   text: string;
 }
 
-interface LyricsMetadata {
-  artist: string;
-  album: string;
-  title: string;
-  lyrics: Lyric[];
-}
-
-interface VideoLyricsProps {
-  videoSources: string[];
-  audioSources: string[];
-  poster: string | null;
-  lyricsSrc: string;
-}
-
 const VideoLyrics: React.FC<VideoLyricsProps> = ({
+  title,
   videoSources,
   audioSources,
   poster,
-  lyricsSrc,
+  original_lyrics,
+  translations,
+  artist,
+  album,
 }) => {
-  const [metadata, setMetadata] = useState<LyricsMetadata | null>(null);
-  const [currentLyricIndex, setCurrentLyricIndex] = useState<number>(-1);
-  const [isScrollPaused, setIsScrollPaused] = useState<boolean>(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const scrollPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const [originalLyrics, setOriginalLyrics] = useState<Lyric[]>([]);
+  const [translationLyrics, setTranslationLyrics] = useState<
+    Record<string, Lyric[]>
+  >({});
+  const [translationToggles, setTranslationToggles] = useState<
+    Record<string, boolean>
+  >({});
+  const [currentTime, setCurrentTime] = useState(0);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const fetchLyrics = async () => {
       try {
-        const parsedLyrics: LyricsMetadata = await invoke("parse_lyrics_file", {
-          filePath: lyricsSrc,
-        });
-        setMetadata(parsedLyrics);
+        const parsedLyrics = await invoke<{ lyrics: Lyric[] }>(
+          "parse_lyrics_file",
+          { filePath: original_lyrics }
+        );
+        setOriginalLyrics(parsedLyrics.lyrics);
       } catch (error) {
-        console.error("Error parsing lyrics:", error);
+        console.error("Error fetching original lyrics:", error);
+      }
+    };
+    if (original_lyrics) fetchLyrics();
+  }, [original_lyrics]);
+
+  useEffect(() => {
+    const fetchTranslations = async () => {
+      if (translations && translations.length > 0) {
+        const translationData: Record<string, Lyric[]> = {};
+        const translationState: Record<string, boolean> = {};
+
+        for (const filePath of translations) {
+          try {
+            const language = filePath.split(".").slice(-2, -1)[0]; // Extract part before '.lrc'
+            const parsedTranslation = await invoke<{
+              lyrics: Lyric[];
+            }>("parse_lyrics_file", { filePath });
+            translationData[language!] = parsedTranslation.lyrics;
+            translationState[language!] = false;
+          } catch (error) {
+            console.error(`Error fetching translation for ${filePath}:`, error);
+          }
+        }
+
+        setTranslationLyrics(translationData);
+        setTranslationToggles(translationState);
       }
     };
 
-    fetchLyrics();
-  }, [lyricsSrc]);
+    fetchTranslations();
+  }, [translations]);
 
   useEffect(() => {
     videoRef.current?.load();
   }, [videoSources]);
 
   useEffect(() => {
-    videoRef.current?.load();
+    audioRef.current?.load();
   }, [audioSources]);
 
   const handleTimeUpdate = (
     event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>
   ) => {
     const currentTime = event.currentTarget.currentTime;
-    if (metadata?.lyrics) {
-      const index =
-        metadata.lyrics.findIndex((lyric) => lyric.time > currentTime) - 1;
-      setCurrentLyricIndex(index);
-    }
+    setCurrentTime(currentTime);
   };
 
-  const handleLyricClick = (time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-    }
+  const handleLineClick = (time: number) => {
+    if (videoRef.current) videoRef.current.currentTime = time;
+    if (audioRef.current) audioRef.current.currentTime = time;
+    setCurrentTime(time);
   };
 
-  const handleScrollPause = () => {
-    setIsScrollPaused(true);
-    if (scrollPauseTimerRef.current) clearTimeout(scrollPauseTimerRef.current);
-    scrollPauseTimerRef.current = setTimeout(() => {
-      setIsScrollPaused(false);
-    }, 100);
+  const toggleAutoScroll = () => {
+    setAutoScroll(!autoScroll);
   };
+
+  const toggleTranslation = (language: string) => {
+    setTranslationToggles((prevState) => ({
+      ...prevState,
+      [language]: !prevState[language],
+    }));
+  };
+
+  const activeTranslations = Object.keys(translationToggles).filter(
+    (lang) => translationToggles[lang]
+  );
 
   return (
-    <div className="flex flex-col h-screen mx-auto">
-      {metadata && (
-        <div className="p-4 text-center">
-          <h2 className="text-2xl font-bold">{metadata.title}</h2>
-          <h3 className="text-xl">{metadata.artist}</h3>
-          <h4 className="text-lg">{metadata.album}</h4>
-        </div>
-      )}
-
-      {/* {poster && (
-        <div className="p-4 text-center">
-          <img src={poster} alt="Media Poster" className="mx-auto" />
-        </div>
-      )} */}
-
+    <div className="flex flex-col items-center space-y-4">
+      <div className="text-center">
+        <h2>{title}</h2>
+        <h3>{artist}</h3>
+        <h4>{album}</h4>
+      </div>
       {videoSources?.length > 0 ? (
-        poster ? (
-          <VideoDisplay
-            videoSources={videoSources}
-            onTimeUpdate={handleTimeUpdate}
-            videoRef={videoRef}
-            poster={poster}
-          />
-        ) : (
-          <VideoDisplay
-            videoSources={videoSources}
-            onTimeUpdate={handleTimeUpdate}
-            videoRef={videoRef}
-          />
-        )
+        <VideoDisplay
+          videoSources={videoSources}
+          onTimeUpdate={handleTimeUpdate}
+          videoRef={videoRef}
+          poster={poster}
+        />
       ) : (
         audioSources?.length > 0 && (
           <AudioDisplay
@@ -127,15 +144,38 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
         )
       )}
 
-      {metadata?.lyrics && (
-        <LyricDisplay
-          lyrics={metadata.lyrics}
-          currentLyricIndex={currentLyricIndex}
-          onLyricClick={handleLyricClick}
-          onScrollPause={handleScrollPause}
-          isScrollPaused={isScrollPaused}
-        />
-      )}
+      <div className="flex gap-x-16">
+        <button
+          onClick={toggleAutoScroll}
+          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          {autoScroll ? "Disable Auto Scroll" : "Enable Auto Scroll"}
+        </button>
+        {Object.keys(translationToggles).map((language) => (
+          <button
+            key={language}
+            onClick={() => toggleTranslation(language)}
+            className={`mt-2 px-4 py-2 rounded ${
+              translationToggles[language]
+                ? "bg-green-500 text-white"
+                : "bg-gray-500 text-white"
+            }`}
+          >
+            {language}
+          </button>
+        ))}
+      </div>
+
+      <LyricDisplay
+        lyrics={originalLyrics.map((lyric) => lyric.text)}
+        translation={activeTranslations.map((lang) =>
+          translationLyrics[lang]?.map((lyric) => lyric.text)
+        )}
+        timeStamps={originalLyrics.map((lyric) => lyric.time)}
+        currentTime={currentTime}
+        onLineClick={handleLineClick}
+        autoScroll={autoScroll}
+      />
     </div>
   );
 };
