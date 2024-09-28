@@ -11,7 +11,7 @@ function App() {
   };
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto flex min-w-full min-h-screen dark:bg-neutral-900 text-slate-900 dark:text-white">
       <MediaList onMediaSelect={handleMediaSelect} />
       {selectedMedia && (
         <VideoLyrics

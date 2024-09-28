@@ -121,7 +121,7 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
   );
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div className="flex flex-col items-center space-y-4 w-2/3 md:w-3/4 lg:w-5/5 h-screen py-2">
       <div className="text-center">
         <h2>{title}</h2>
         <h3>{artist}</h3>
@@ -144,26 +144,36 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
         )
       )}
 
-      <div className="flex gap-x-16">
-        <button
-          onClick={toggleAutoScroll}
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          {autoScroll ? "Disable Auto Scroll" : "Enable Auto Scroll"}
-        </button>
-        {Object.keys(translationToggles).map((language) => (
+      <div className="flex gap-x-8 text-center">
+        <div className="flex flex-col">
+          <div>Auto Scroll</div>
           <button
-            key={language}
-            onClick={() => toggleTranslation(language)}
-            className={`mt-2 px-4 py-2 rounded ${
-              translationToggles[language]
-                ? "bg-green-500 text-white"
-                : "bg-gray-500 text-white"
-            }`}
+            onClick={toggleAutoScroll}
+            className={`mt-2 px-4 py-2 ${
+              autoScroll ? "bg-gray-500 text-white" : "bg-green-500 text-white"
+            } rounded`}
           >
-            {language}
+            {autoScroll ? "Disable" : "Enable"}
           </button>
-        ))}
+        </div>
+        <div className="flex flex-col">
+          <div>Translation</div>
+          <div className="flex flex-row gap-x-1">
+            {Object.keys(translationToggles).map((language) => (
+              <button
+                key={language}
+                onClick={() => toggleTranslation(language)}
+                className={`mt-2 px-4 py-2 rounded ${
+                  translationToggles[language]
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-500 text-white"
+                }`}
+              >
+                {language}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <LyricDisplay

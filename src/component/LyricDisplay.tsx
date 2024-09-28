@@ -53,7 +53,7 @@ const LyricDisplay: React.FC<LyricDisplayProps> = ({
     <div
       ref={lyricsRef}
       onScroll={handleScroll}
-      className="overflow-y-auto max-h-96 w-full bg-gray-800 text-white p-4 rounded"
+      className="overflow-y-auto h-full w-full text-slate-900 dark:text-white p-4 rounded"
     >
       {lyrics.map((line, index) => (
         <div
@@ -61,8 +61,8 @@ const LyricDisplay: React.FC<LyricDisplayProps> = ({
           onClick={() => onLineClick(timeStamps[index])}
           className={`lyric-line py-2 ${
             currentLyricIndex === index
-              ? "text-blue-500 font-bold"
-              : "text-gray-300"
+              ? "text-yellow-700 dark:text-yellow-300 font-bold"
+              : "text-slate-800 dark:text-white"
           } cursor-pointer`}
         >
           <span dangerouslySetInnerHTML={{ __html: line }} />
@@ -71,8 +71,8 @@ const LyricDisplay: React.FC<LyricDisplayProps> = ({
               key={transIndex}
               className={`text-sm ${
                 currentLyricIndex === index
-                  ? "text-blue-500 font-bold"
-                  : "text-gray-300"
+                  ? "text-red-700 dark:text-red-300 font-semibold"
+                  : "text-slate-800 dark:text-white"
               }`}
             >
               {trans[index]}

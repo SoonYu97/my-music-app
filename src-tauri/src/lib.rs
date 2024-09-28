@@ -74,6 +74,7 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
                 }
             }
 
+            let mut title = String::new();
             let mut artist: Option<String> = None;
             let mut album: Option<String> = None;
 
@@ -81,13 +82,14 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
                 let lrc_path = path.join(format!("{}.lrc", folder_name));
                 if let Ok(content) = fs::read_to_string(lrc_path) {
                     let metadata = extract_metadata(&content);
+                    title = metadata.title;
                     artist = Some(metadata.artist);
                     album = Some(metadata.album);
                 };
             }
 
             let music_video = MusicVideo {
-                title: folder_name,
+                title,
                 has_lrc,
                 artist,
                 album,

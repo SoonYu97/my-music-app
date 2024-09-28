@@ -12,7 +12,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
   videoRef,
 }) => {
   return (
-    <div className="w-full md:w-1/2 mx-auto">
+    <div className="mx-auto h-1/3">
       <video
         controls
         poster={poster}
