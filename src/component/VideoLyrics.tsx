@@ -121,11 +121,11 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
   );
 
   return (
-    <div className="flex flex-col items-center space-y-4 w-2/3 md:w-3/4 lg:w-5/5 h-screen py-2">
-      <div className="text-center">
-        <h2>{title}</h2>
-        <h3>{artist}</h3>
-        <h4>{album}</h4>
+    <div className="flex flex-col items-center space-y-4 w-2/3 md:w-3/4 lg:w-5/5 h-screen py-2 dark:bg-neutral-900 bg-white text-slate-900 dark:text-white transition-colors duration-300">
+      <div className="text-center space-y-2">
+        <h2 className="text-xl font-bold">{title}</h2>
+        <h3 className="text-lg">{artist}</h3>
+        <h4 className="text-md">{album}</h4>
       </div>
       {videoSources?.length > 0 ? (
         <VideoDisplay
@@ -146,27 +146,29 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
 
       <div className="flex gap-x-8 text-center">
         <div className="flex flex-col">
-          <div>Auto Scroll</div>
+          <div className="text-sm">Auto Scroll</div>
           <button
             onClick={toggleAutoScroll}
-            className={`mt-2 px-4 py-2 ${
-              autoScroll ? "bg-green-500 text-white" : "bg-gray-500 text-white"
-            } rounded`}
+            className={`mt-2 px-4 py-2 rounded shadow-md focus:outline-none transition-colors duration-300 ${
+              autoScroll
+                ? "bg-green-500 text-white hover:bg-green-600"
+                : "bg-gray-500 text-white hover:bg-gray-600"
+            }`}
           >
             {autoScroll ? "Disable" : "Enable"}
           </button>
         </div>
         <div className="flex flex-col">
-          <div>Translation</div>
+          <div className="text-sm">Translation</div>
           <div className="flex flex-row gap-x-1">
             {Object.keys(translationToggles).map((language) => (
               <button
                 key={language}
                 onClick={() => toggleTranslation(language)}
-                className={`mt-2 px-4 py-2 rounded ${
+                className={`mt-2 px-4 py-2 rounded shadow-md focus:outline-none transition-colors duration-300 ${
                   translationToggles[language]
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-500 text-white"
+                    ? "bg-green-500 text-white hover:bg-green-600"
+                    : "bg-gray-500 text-white hover:bg-gray-600"
                 }`}
               >
                 {language}
