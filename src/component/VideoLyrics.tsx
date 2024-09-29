@@ -26,7 +26,7 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
   audioSources,
   poster,
   original_lyrics,
-  translations,
+  translations = [],
   artist,
   album,
 }) => {
@@ -78,6 +78,9 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
 
         setTranslationLyrics(translationData);
         setTranslationToggles(translationState);
+      } else {
+        setTranslationLyrics({});
+        setTranslationToggles({});
       }
     };
 
@@ -160,21 +163,27 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
         </div>
         <div className="flex flex-col">
           <div className="text-sm">Translation</div>
-          <div className="flex flex-row gap-x-1">
-            {Object.keys(translationToggles).map((language) => (
-              <button
-                key={language}
-                onClick={() => toggleTranslation(language)}
-                className={`mt-2 px-4 py-2 rounded shadow-md focus:outline-none transition-colors duration-300 ${
-                  translationToggles[language]
-                    ? "bg-green-500 text-white hover:bg-green-600"
-                    : "bg-gray-500 text-white hover:bg-gray-600"
-                }`}
-              >
-                {language}
-              </button>
-            ))}
-          </div>
+          {Object.keys(translationToggles).length > 0 ? (
+            <div className="flex flex-row gap-x-1">
+              {Object.keys(translationToggles).map((language) => (
+                <button
+                  key={language}
+                  onClick={() => toggleTranslation(language)}
+                  className={`mt-2 px-4 py-2 rounded shadow-md focus:outline-none transition-colors duration-300 ${
+                    translationToggles[language]
+                      ? "bg-green-500 text-white hover:bg-green-600"
+                      : "bg-gray-500 text-white hover:bg-gray-600"
+                  }`}
+                >
+                  {language}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-2 px-4 py-2 rounded shadow-md focus:outline-none">
+              No Translation
+            </div>
+          )}
         </div>
       </div>
 
