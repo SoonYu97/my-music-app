@@ -124,7 +124,7 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
   }, [translationToggles]);
 
   return (
-    <div className="flex flex-col items-center space-y-4 w-2/3 md:w-3/4 lg:w-4/5 h-screen py-2 dark:bg-neutral-900 dark:text-white">
+    <div className="flex flex-col items-center space-y-4 w-full h-screen py-2 dark:bg-neutral-900 dark:text-white">
       <div className="text-center space-y-1">
         <h2 className="text-lg font-bold">{title}</h2>
         {artist && (

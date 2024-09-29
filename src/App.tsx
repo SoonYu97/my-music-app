@@ -12,9 +12,10 @@ function App() {
   };
 
   return (
-    <div className="container mx-auto flex min-w-full min-h-screen dark:bg-neutral-900 text-slate-900 dark:text-white">
+    <div className="container mx-auto flex min-w-full min-h-screen h-screen dark:bg-neutral-900 text-slate-900 dark:text-white">
       <MediaList onMediaSelect={handleMediaSelect} />
       {selectedMedia && (
+        <div className="flex-grow h-screen">
         <VideoLyrics
           title={selectedMedia.title}
           videoSources={selectedMedia.video_sources}
@@ -25,6 +26,7 @@ function App() {
           artist={selectedMedia.artist}
           album={selectedMedia.album}
         />
+        </div>
       )}
     </div>
   );
