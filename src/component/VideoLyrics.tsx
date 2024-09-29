@@ -57,6 +57,7 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
       }
     };
     if (original_lyrics) fetchLyrics();
+    else setOriginalLyrics([])
   }, [original_lyrics]);
 
   useEffect(() => {
