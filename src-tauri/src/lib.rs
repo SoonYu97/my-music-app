@@ -64,7 +64,7 @@ fn list_media_files() -> Result<Vec<MusicVideo>, String> {
                     Some("webm") | Some("mp4") => {
                         video_sources.push(file_path.to_string_lossy().to_string());
                     }
-                    Some("mp3") => {
+                    Some("mp3") | Some("flac") => {
                         audio_sources.push(file_path.to_string_lossy().to_string());
                     }
                     Some("jpg") | Some("png") => {
