@@ -1,7 +1,8 @@
 import { useState } from "react";
 import "./App.css";
-import MediaList, { MediaFile } from "./component/MediaList";
+import MediaList from "./component/MediaList";
 import VideoLyrics from "./component/VideoLyrics";
+import { MediaFile } from "./types/media";
 
 function App() {
   const [selectedMedia, setSelectedMedia] = useState<MediaFile | null>(null);
