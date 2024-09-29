@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import LyricDisplay from "./LyricDisplay";
 import VideoDisplay from "./VideoDisplay";
 import AudioDisplay from "./AudioDisplay";
+import ToggleButton from "./ToggleButton";
+import ScrollControl from "./ScrollControl";
 
 interface VideoLyricsProps {
   title: string;
@@ -108,10 +110,6 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
     setCurrentTime(time);
   };
 
-  const toggleAutoScroll = () => {
-    setAutoScroll(!autoScroll);
-  };
-
   const toggleTranslation = (language: string) => {
     setTranslationToggles((prevState) => ({
       ...prevState,
@@ -119,16 +117,20 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
     }));
   };
 
-  const activeTranslations = Object.keys(translationToggles).filter(
-    (lang) => translationToggles[lang]
-  );
+  const activeTranslations = useMemo(() => {
+    return Object.keys(translationToggles).filter(
+      (lang) => translationToggles[lang]
+    );
+  }, [translationToggles]);
 
   return (
-    <div className="flex flex-col items-center space-y-4 w-2/3 md:w-3/4 lg:w-5/5 h-screen py-2 dark:bg-neutral-900 bg-white text-slate-900 dark:text-white transition-colors duration-300">
-      <div className="text-center space-y-2">
-        <h2 className="text-xl font-bold">{title}</h2>
-        <h3 className="text-lg">{artist}</h3>
-        <h4 className="text-md">{album}</h4>
+    <div className="flex flex-col items-center space-y-4 w-2/3 md:w-3/4 lg:w-4/5 h-screen py-2 dark:bg-neutral-900 dark:text-white">
+      <div className="text-center space-y-1">
+        <h2 className="text-lg font-bold">{title}</h2>
+        {artist && (
+          <h3 className="text-sm font-semibold text-gray-400">{artist}</h3>
+        )}
+        {album && <h4 className="text-xs text-gray-500">{album}</h4>}
       </div>
       {videoSources?.length > 0 ? (
         <VideoDisplay
@@ -148,35 +150,23 @@ const VideoLyrics: React.FC<VideoLyricsProps> = ({
       )}
 
       <div className="flex gap-x-8 text-center">
+        {/* Auto Scroll */}
+        <ScrollControl
+          autoScroll={autoScroll}
+          toggleAutoScroll={() => setAutoScroll(!autoScroll)}
+        />
+
         <div className="flex flex-col">
-          <div className="text-sm">Auto Scroll</div>
-          <button
-            onClick={toggleAutoScroll}
-            className={`mt-2 px-4 py-2 rounded shadow-md focus:outline-none transition-colors duration-300 ${
-              autoScroll
-                ? "bg-green-500 text-white hover:bg-green-600"
-                : "bg-gray-500 text-white hover:bg-gray-600"
-            }`}
-          >
-            {autoScroll ? "Disable" : "Enable"}
-          </button>
-        </div>
-        <div className="flex flex-col">
-          <div className="text-sm">Translation</div>
+          <div>Translation</div>
           {Object.keys(translationToggles).length > 0 ? (
-            <div className="flex flex-row gap-x-1">
+            <div className="flex mt-2 flex-row gap-2">
               {Object.keys(translationToggles).map((language) => (
-                <button
+                <ToggleButton
                   key={language}
+                  isActive={translationToggles[language]}
                   onClick={() => toggleTranslation(language)}
-                  className={`mt-2 px-4 py-2 rounded shadow-md focus:outline-none transition-colors duration-300 ${
-                    translationToggles[language]
-                      ? "bg-green-500 text-white hover:bg-green-600"
-                      : "bg-gray-500 text-white hover:bg-gray-600"
-                  }`}
-                >
-                  {language}
-                </button>
+                  label={language}
+                />
               ))}
             </div>
           ) : (
